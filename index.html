@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>HOI4 LIFE ENGINE - DEFINITIVE EDITION</title>
+    <style>
+        :root {
+            --hoi-bg: #1b1e1f;
+            --hoi-panel: #2c3233;
+            --hoi-border: #4d5152;
+            --hoi-gold: #b39a68;
+            --hoi-gold-bright: #ffd700;
+            --hoi-text: #d1d1d1;
+            --hoi-red: #bb2222;
+            --hoi-green: #2d5a27;
+        }
+
+        body {
+            background-color: #050505;
+            color: var(--hoi-text);
+            font-family: 'Verdana', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+            font-size: 12px;
+            background-image: url('https://www.transparenttextures.com/patterns/dark-leather.png');
+        }
+
+        /* TOP BAR */
+        .top-bar {
+            background: linear-gradient(180deg, #3a3f41, #1b1e1f);
+            height: 38px;
+            border-bottom: 2px solid var(--hoi-gold);
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            gap: 18px;
+            position: fixed;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+        }
+
+        .stat { display: flex; align-items: center; gap: 6px; font-weight: bold; text-shadow: 1px 1px black; }
+        .stat span { color: var(--hoi-gold-bright); }
+
+        /* LAYOUT MAIN */
+        .wrapper {
+            display: grid;
+            grid-template-columns: 380px 1fr 340px;
+            gap: 15px;
+            padding: 55px 20px 20px;
+            max-width: 1800px;
+            margin: auto;
+        }
+
+        .panel {
+            background: var(--hoi-panel);
+            border: 2px solid var(--hoi-border);
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            background: linear-gradient(90deg, #2c3233, #4d5152, #2c3233);
+            padding: 8px 12px;
+            border-bottom: 1.5px solid var(--hoi-gold);
+            font-weight: bold;
+            color: var(--hoi-gold);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* IZQUIERDA: GOBIERNO */
+        .leader-card { padding: 15px; background: rgba(0,0,0,0.3); margin: 10px; border: 1px solid #444; }
+        .portrait-frame {
+            width: 140px; height: 180px;
+            border: 3px solid var(--hoi-gold);
+            background: #222 center/cover no-repeat;
+            margin-bottom: 10px;
+            box-shadow: inset 0 0 20px black;
+        }
+
+        .spirits-box {
+            display: grid; grid-template-columns: repeat(5, 1fr);
+            gap: 8px; padding: 10px; background: #1a1a1a; margin: 10px;
+        }
+        .spirit {
+            width: 45px; height: 45px; border: 1px solid var(--hoi-gold);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; cursor: pointer; transition: 0.2s;
+        }
+        .spirit:hover { transform: scale(1.1); background: #333; }
+
+        /* CENTRO: ENFOQUES Y EVENTOS */
+        .focus-section { padding: 15px; flex-grow: 1; overflow-y: auto; max-height: 500px; }
+        .focus-item {
+            background: linear-gradient(90deg, #1e1e1e, #2a2a2a);
+            border-left: 4px solid var(--hoi-gold);
+            margin-bottom: 12px; padding: 12px;
+            position: relative;
+        }
+
+        .log-area {
+            height: 150px; background: #000; color: #00ff00;
+            font-family: 'Courier New', monospace; padding: 10px;
+            font-size: 11px; overflow-y: auto; border: 1px solid var(--hoi-gold);
+            margin: 10px;
+        }
+
+        /* DERECHA: ASESORES Y EXP */
+        .advisor-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px;
+        }
+        .advisor-slot {
+            height: 60px; background: #1a1a1a; border: 1px dashed var(--hoi-gold);
+            display: flex; align-items: center; padding: 5px; gap: 10px;
+        }
+
+        .exp-container { padding: 15px; }
+        .progress-bg { height: 12px; background: #111; border: 1px solid #444; margin: 8px 0; border-radius: 2px; }
+        .progress-fill { height: 100%; width: 0%; transition: 0.5s; box-shadow: 0 0 5px rgba(255,255,255,0.2); }
+
+        /* BOTONES Y INPUTS */
+        .btn-hoi {
+            background: linear-gradient(180deg, #7a653d, #3d3322);
+            border: 1px solid var(--hoi-gold); color: #fff;
+            padding: 6px; cursor: pointer; font-weight: bold;
+            text-transform: uppercase; margin-bottom: 5px; width: 100%;
+        }
+        .btn-hoi:hover { filter: brightness(1.3); }
+        
+        input, select, textarea {
+            background: #000; color: var(--hoi-gold-bright); border: 1px solid var(--hoi-border);
+            padding: 5px; margin: 3px 0; width: 100%; box-sizing: border-box;
+        }
+
+        /* RADIO PLAYER */
+        .radio-control {
+            position: fixed; bottom: 0; right: 0; width: 300px;
+            background: var(--hoi-panel); border-top: 2px solid var(--hoi-gold);
+            border-left: 2px solid var(--hoi-gold); padding: 10px; z-index: 2000;
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <div class="stat">⚡ <span id="pp-val">150</span></div>
+    <div class="stat">⚖️ <span id="stab-val">80%</span></div>
+    <div class="stat">🎯 <span id="war-val">50%</span></div>
+    <div class="stat">🏭 <span id="ind-val">25</span></div>
+    <div class="stat" style="color:var(--hoi-red)">🔥 <span id="ten-val">5%</span></div>
+    <div style="flex-grow: 1;"></div>
+    <div class="stat" id="clock" style="letter-spacing: 1px;">12:00, 16 FEB 2026</div>
+</div>
+
+<div class="wrapper">
+    <div class="panel">
+        <div class="panel-header"><span>ESTADO MAYOR</span></div>
+        <div class="leader-card">
+            <div id="portrait" class="portrait-frame"></div>
+            <div id="flag" style="width: 60px; height: 35px; border: 1px solid #fff; background: #333 center/cover;"></div>
+            <input type="text" id="leaderName" placeholder="NOMBRE DEL LÍDER" oninput="save()">
+            <select id="ideology" onchange="save()">
+                <option value="estoico">ESTOICISMO (NEUTRAL)</option>
+                <option value="productivista">PRODUCTIVISMO (FASCISTA)</option>
+                <option value="humanista">HUMANISMO (DEMÓCRATA)</option>
+                <option value="nihilista">NIHILISMO (NO ALINEADO)</option>
+                <option value="espiritual">ESPIRITUALISMO (TEÓCRATA)</option>
+            </select>
+        </div>
+
+        <div class="panel-header">ESPÍRITUS NACIONALES</div>
+        <div id="spirits" class="spirits-box"></div>
+        <div style="padding: 10px;"><button class="btn-hoi" onclick="addSpirit()">+ RECLUTAR ESPÍRITU</button></div>
+
+        <div class="panel-header">PERSONALIZACIÓN</div>
+        <div style="padding: 10px;">
+            <input type="text" id="portURL" placeholder="URL RETRATO" onchange="save()">
+            <input type="text" id="flagURL" placeholder="URL BANDERA" onchange="save()">
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">ÁRBOL DE ENFOQUES</div>
+        <div class="focus-section">
+            <div style="background: rgba(0,0,0,0.5); padding: 10px; border: 1px dashed var(--hoi-gold); margin-bottom: 15px;">
+                <input type="text" id="fTitle" placeholder="Título del Enfoque...">
+                <textarea id="fDesc" placeholder="Consecuencias del enfoque..."></textarea>
+                <button class="btn-hoi" onclick="addFocus()">COMENZAR ENFOQUE (70 DÍAS)</button>
+            </div>
+            <div id="focusTree"></div>
+        </div>
+        <div class="panel-header">REGISTRO DE CAMPAÑA</div>
+        <div id="log" class="log-area"></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">GABINETE DE ASESORES</div>
+        <div class="advisor-grid">
+            <div class="advisor-slot" onclick="addAdvisor(0)" id="adv-0"><span>+ Asesor Político</span></div>
+            <div class="advisor-slot" onclick="addAdvisor(1)" id="adv-1"><span>+ Teórico</span></div>
+            <div class="advisor-slot" onclick="addAdvisor(2)" id="adv-2"><span>+ Capitán de Industria</span></div>
+            <div class="advisor-slot" onclick="addAdvisor(3)" id="adv-3"><span>+ Alto Mando</span></div>
+        </div>
+
+        <div class="panel-header">CAPACIDADES OPERATIVAS</div>
+        <div class="exp-container">
+            <label>EXPERIENCIA FÍSICA</label>
+            <div class="progress-bg"><div id="bar-1" class="progress-fill" style="background:var(--hoi-green)"></div></div>
+            <label>EXPERIENCIA INTELECTUAL</label>
+            <div class="progress-bg"><div id="bar-2" class="progress-fill" style="background:var(--hoi-blue)"></div></div>
+            <label>EXPERIENCIA SOCIAL</label>
+            <div class="progress-bg"><div id="bar-3" class="progress-fill" style="background:var(--hoi-gold)"></div></div>
+
+            <div style="margin-top: 20px;">
+                <label>PODER POLÍTICO</label><input type="number" id="ppIn" oninput="save()">
+                <label>ESTABILIDAD %</label><input type="number" id="stabIn" oninput="save()">
+                <label>TENSIÓN MUNDIAL %</label><input type="number" id="tenIn" oninput="save()">
+            </div>
+
+            <button class="btn-hoi" style="margin-top:20px;" onclick="addStat('pp', -50); addLog('Se ha ejecutado una purga de malos hábitos.')">🧹 PURGAR MALOS HÁBITOS (-50 PP)</button>
+            <button class="btn-hoi" onclick="exportData()">💾 DESCARGAR PARTIDA</button>
+            <button class="btn-hoi" style="background:var(--hoi-red)" onclick="reset()">☢️ ANEXIÓN TOTAL (RESET)</button>
+        </div>
+    </div>
+</div>
+
+<div class="radio-control">
+    <div style="font-size: 10px; color: var(--hoi-gold); margin-bottom: 5px; font-weight: bold;">📻 RADIO NACIONAL</div>
+    <audio id="bgm" src="https://dn720302.ca.archive.org/0/items/the-british-grenadiers-remix/the%20british%20grenadiers%20remix.mp3" loop></audio>
+    <div style="display: flex; gap: 5px; align-items: center;">
+        <button class="btn-hoi" style="width: 50px;" onclick="document.getElementById('bgm').play()">▶</button>
+        <button class="btn-hoi" style="width: 50px;" onclick="document.getElementById('bgm').pause()">||</button>
+        <input type="range" min="0" max="1" step="0.1" onchange="document.getElementById('bgm').volume = this.value">
+    </div>
+    <marquee id="track-name" style="color: #00ff00; font-family: monospace; font-size: 10px; margin-top: 5px;">Escuchando: The British Grenadiers (Remix)</marquee>
+</div>
+
+<script>
+    let state = {
+        leader: "General", ideology: "estoico", pp: 150, stab: 80, war: 50, ind: 25, ten: 5,
+        port: "", flag: "", spirits: [{i: "🎖️", n: "Veterano"}], focuses: [], advisors: ["","","",""],
+        logs: ["Partida iniciada..."]
+    };
+
+    function addLog(msg) {
+        state.logs.unshift(`[${new Date().toLocaleTimeString()}] ${msg}`);
+        if(state.logs.length > 20) state.logs.pop();
+        renderLogs();
+    }
+
+    function renderLogs() {
+        document.getElementById('log').innerHTML = state.logs.join('<br>');
+    }
+
+    function save() {
+        state.leader = document.getElementById('leaderName').value;
+        state.ideology = document.getElementById('ideology').value;
+        state.pp = parseInt(document.getElementById('ppIn').value) || 0;
+        state.stab = parseInt(document.getElementById('stabIn').value) || 0;
+        state.ten = parseInt(document.getElementById('tenIn').value) || 0;
+        state.port = document.getElementById('portURL').value;
+        state.flag = document.getElementById('flagURL').value;
+        localStorage.setItem('hoi4_definitivo', JSON.stringify(state));
+        render();
+    }
+
+    function render() {
+        // Stats superiores
+        document.getElementById('pp-val').innerText = state.pp;
+        document.getElementById('stab-val').innerText = state.stab + "%";
+        document.getElementById('war-val').innerText = state.war + "%";
+        document.getElementById('ind-val').innerText = state.ind;
+        document.getElementById('ten-val').innerText = state.ten + "%";
+
+        // Imágenes
+        document.getElementById('portrait').style.backgroundImage = `url('${state.port || 'https://via.placeholder.com/140x180?text=LIDER'}')`;
+        document.getElementById('flag').style.backgroundImage = `url('${state.flag || 'https://via.placeholder.com/60x35?text=BANDERA'}')`;
+
+        // Barras
+        document.getElementById('bar-1').style.width = state.stab + "%";
+        document.getElementById('bar-2').style.width = state.pp/4 + "%";
+        document.getElementById('bar-3').style.width = state.war + "%";
+
+        // Espíritus
+        const sDiv = document.getElementById('spirits');
+        sDiv.innerHTML = '';
+        state.spirits.forEach((s, i) => {
+            sDiv.innerHTML += `<div class="spirit" title="${s.n}" onclick="removeSpirit(${i})">${s.i}</div>`;
+        });
+
+        // Enfoques
+        const fDiv = document.getElementById('focusTree');
+        fDiv.innerHTML = '';
+        state.focuses.forEach((f, i) => {
+            fDiv.innerHTML += `
+                <div class="focus-item">
+                    <strong>${f.title}</strong> <span style="float:right; color:var(--hoi-gold)">${f.status}</span>
+                    <p style="margin:5px 0; font-size:11px; opacity:0.8">${f.desc}</p>
+                    <button class="btn-hoi" style="width:auto; font-size:9px;" onclick="setFocus(${i}, 'EN CURSO')">INICIAR</button>
+                    <button class="btn-hoi" style="width:auto; font-size:9px; background:var(--hoi-green);" onclick="setFocus(${i}, 'COMPLETO')">COMPLETAR</button>
+                    <button class="btn-hoi" style="width:auto; font-size:9px; background:#444;" onclick="removeFocus(${i})">X</button>
+                </div>`;
+        });
+
+        // Asesores
+        state.advisors.forEach((adv, i) => {
+            if(adv) document.getElementById(`adv-${i}`).innerHTML = `<span>👤 ${adv}</span>`;
+        });
+
+        renderLogs();
+    }
+
+    function addSpirit() {
+        const i = prompt("Emoji del Espíritu:");
+        const n = prompt("Nombre:");
+        if(i && n) { state.spirits.push({i, n}); addLog(`Nuevo espíritu nacional: ${n}`); save(); }
+    }
+
+    function removeSpirit(i) { state.spirits.splice(i, 1); save(); }
+
+    function addFocus() {
+        const title = document.getElementById('fTitle').value;
+        const desc = document.getElementById('fDesc').value;
+        if(title) {
+            state.focuses.push({title, desc, status: 'DISPONIBLE'});
+            addLog(`Nuevo enfoque disponible: ${title}`);
+            document.getElementById('fTitle').value = '';
+            document.getElementById('fDesc').value = '';
+            save();
+        }
+    }
+
+    function setFocus(i, status) { state.focuses[i].status = status; addLog(`Enfoque ${state.focuses[i].title}: ${status}`); save(); }
+    function removeFocus(i) { state.focuses.splice(i, 1); save(); }
+
+    function addAdvisor(i) {
+        const n = prompt("Nombre del Asesor:");
+        if(n) { state.advisors[i] = n; addLog(`Asesor nombrado: ${n}`); save(); }
+    }
+
+    function addStat(type, val) {
+        state[type] += val;
+        document.getElementById(type+'In').value = state[type];
+        save();
+    }
+
+    function exportData() {
+        const data = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+        const link = document.createElement('a');
+        link.setAttribute("href", data);
+        link.setAttribute("download", "partida_vida_final.json");
+        link.click();
+    }
+
+    function reset() { if(confirm("¿CONFIRMAR CAPITULACIÓN INCONDICIONAL? (Borrar todo)")) { localStorage.clear(); location.reload(); } }
+
+    function updateClock() {
+        const n = new Date();
+        const m = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+        document.getElementById('clock').innerText = `${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}, ${n.getDate()} ${m[n.getMonth()]} ${n.getFullYear()}`;
+    }
+
+    window.onload = () => {
+        const saved = localStorage.getItem('hoi4_definitivo');
+        if(saved) {
+            state = JSON.parse(saved);
+            document.getElementById('leaderName').value = state.leader;
+            document.getElementById('ideology').value = state.ideology;
+            document.getElementById('ppIn').value = state.pp;
+            document.getElementById('stabIn').value = state.stab;
+            document.getElementById('tenIn').value = state.ten;
+            document.getElementById('portURL').value = state.port || "";
+            document.getElementById('flagURL').value = state.flag || "";
+        }
+        render();
+        setInterval(updateClock, 1000);
+        updateClock();
+    };
+</script>
+
+</body>
+</html>
